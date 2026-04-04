@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Ping Streamlit App
         run: |
-          curl -s -o /dev/null -w "%{http_code}" https://anomaly-rca.streamlit.app || true
+          curl -s -o /dev/null -w "%{http_code}" https://anomaly-detection-analysis.streamlit.app/ || true
           echo "Pinged app to prevent sleep"
