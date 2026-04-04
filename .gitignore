@@ -1,12 +1,25 @@
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
-venv/
-.env
+*.pyc
 *.egg-info/
-dist/
-build/
-.streamlit/secrets.toml
-*.db
+venv/
+.venv/
+
+# Models
+models/saved/*.joblib
+models/saved/*.json
+
+# Data (full dataset)
+data/creditcard.csv
+
+# Environment
+.env
+*.stackdump
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
 Thumbs.db

@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill //F //IM \"streamlit.exe\")",
+      "Bash(taskkill //F //IM \"python.exe\" //FI \"WINDOWTITLE eq *streamlit*\")",
+      "Bash(netstat -ano)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/models)",
+      "Bash(curl -s -X POST http://localhost:8000/detect_anomaly -H \"Content-Type: application/json\" -d '{\"data\": [{\"error_rate\": 0.35, \"latency_ms\": 400, \"cpu_pct\": 85, \"memory_pct\": 70, \"timestamp\": \"2024-01-15T14:30:00\", \"pod\": \"db-svc\"}, {\"error_rate\": 0.001, \"latency_ms\": 50, \"cpu_pct\": 30, \"memory_pct\": 45, \"timestamp\": \"2024-01-15T14:31:00\", \"pod\": \"api-svc\"}]}')",
+      "Bash(curl -s -X POST \"http://localhost:8000/detect_anomaly?model=isolation_forest\" -H \"Content-Type: application/json\" -d '{\"data\": [{\"error_rate\": 0.35, \"latency_ms\": 400, \"cpu_pct\": 85, \"memory_pct\": 70, \"timestamp\": \"2024-01-15T14:30:00\", \"pod\": \"db-svc\"}, {\"error_rate\": 0.001, \"latency_ms\": 50, \"cpu_pct\": 30, \"memory_pct\": 45, \"timestamp\": \"2024-01-15T14:31:00\", \"pod\": \"api-svc\"}]}')",
+      "Bash(python -c \"import app\")",
+      "Bash(pip install:*)",
+      "Bash(python -c ':*)",
+      "Bash(python test_detector.py)",
+      "Bash(python evaluate_detector.py)",
+      "Bash(timeout 10 streamlit run app.py --server.headless true)",
+      "Bash(rm -f app.py test_detector.py test_gemini.py evaluate_detector.py evaluate_rca.py Dockerfile docker-compose.yml)",
+      "Bash(rm -rf data_pipeline/ __pycache__/)",
+      "Bash(rm -f models/engine.py models/__init__.py)",
+      "Bash(rm -f evaluation/metrics.py evaluation/__init__.py)",
+      "Bash(rm -f api/service.py api/__init__.py)",
+      "Bash(rm -f dashboard/app.py)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(rm:*)"
+    ]
+  }
+}
