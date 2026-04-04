@@ -15,7 +15,8 @@ from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types as genai_types
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
@@ -95,9 +96,9 @@ class AnomalyDetector:
 class GeminiRCA:
     def __init__(self, api_key: str):
         if not GENAI_AVAILABLE:
-            raise ImportError("google-generativeai not installed")
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-2.0-flash")
+            raise ImportError("google-genai not installed")
+        self.client = genai.Client(api_key=api_key)
+        self.model_name = "gemini-2.0-flash"
 
     def generate_rca(self, anomaly: AnomalyEvent, logs_context: str = "") -> RCAReport:
         prompt = (
@@ -114,9 +115,10 @@ class GeminiRCA:
             '"reasoning":"...","affected_services":["..."],"remediation":"..."}'
         )
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
                     temperature=0.2,
                     max_output_tokens=500,
                 ),

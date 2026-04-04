@@ -2,6 +2,9 @@
 
 import os
 import sys
+
+# Suppress Streamlit warnings when importing from app.py
+os.environ.setdefault("STREAMLIT_RUNTIME", "")
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app import AnomalyEvent, GeminiRCA
