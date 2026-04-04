@@ -8,7 +8,7 @@
 
 AI-powered system that detects anomalies in server/infrastructure logs and diagnoses root causes using multi-model ML and Google Gemini -- entirely free to run.
 
-**[Live Demo](https://anomaly-detection-analysis.streamlit.app/)**
+**[Live Demo](https://anomaly-detection-analysis.streamlit.app/)** -- https://anomaly-detection-analysis.streamlit.app/
 
 ---
 
