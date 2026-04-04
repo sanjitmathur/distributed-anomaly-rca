@@ -8,6 +8,8 @@
 
 AI-powered system that detects anomalies in server/infrastructure logs and diagnoses root causes using multi-model ML and Google Gemini -- entirely free to run.
 
+**[Live Demo](https://anomaly-detection-analysis.streamlit.app/)**
+
 ---
 
 ## Architecture
@@ -24,9 +26,10 @@ AI-powered system that detects anomalies in server/infrastructure logs and diagn
      | Data Pipeline    |  | Detection      |  | Root Cause       |
      | - generator.py   |  | Engine         |  | Analysis         |
      | - feature_eng.py |  | - Iso. Forest  |  | - Gemini 2.0     |
-     +--------+---------+  | - (pluggable)  |  |   Flash          |
-              |            +-------+--------+  +--------+---------+
-              |                    |                     |
+     +--------+---------+  | - LOF          |  |   Flash          |
+              |            | - DBSCAN       |  +--------+---------+
+              |            | - Autoencoder  |           |
+              |            +-------+--------+           |
               +--------------------+--------------------+
                                    |
                           +--------v---------+
@@ -37,12 +40,13 @@ AI-powered system that detects anomalies in server/infrastructure logs and diagn
 
 ## Features
 
-- **Multi-Model Anomaly Detection** -- Isolation Forest with pluggable model engine
-- **Automated Feature Engineering** -- statistical features extracted from raw log metrics
-- **Model Evaluation** -- precision, recall, F1, ROC-AUC metrics with structured reports
+- **Multi-Model Anomaly Detection** -- Isolation Forest, LOF, DBSCAN, Autoencoder with ensemble scoring
+- **Automated Feature Engineering** -- rolling stats, z-scores, and time-based features from raw log metrics
+- **Model Evaluation Framework** -- precision, recall, F1, ROC-AUC with model leaderboard
 - **FastAPI REST Service** -- production-ready async API for programmatic access
 - **Gemini-Powered Explainability** -- root cause diagnosis in plain English via Gemini 2.0 Flash
-- **Real-Time Dashboard** -- interactive Streamlit UI with Plotly visualizations
+- **Advanced Dashboard** -- 6-tab Streamlit UI (explorer, detection, comparison, threshold tuning, explainability, real-time streaming)
+- **Permutation-Based Feature Importance** -- understand which metrics drive anomaly scores
 - **Docker-Ready** -- single-command deployment with docker-compose
 
 ---
@@ -64,8 +68,11 @@ pip install -r requirements.txt
 # Set API key
 export GEMINI_API_KEY=your_key_here  # Windows: set GEMINI_API_KEY=your_key_here
 
-# Run dashboard
+# Run dashboard (simple 3-tab version)
 streamlit run app.py
+
+# Run advanced dashboard (6-tab version)
+streamlit run dashboard/app.py
 
 # Run API (separate terminal)
 uvicorn api.service:app --host 0.0.0.0 --port 8000
@@ -88,17 +95,15 @@ docker-compose up --build
 
 ```bash
 # Health check
-curl http://localhost:8000/
+curl http://localhost:8000/health
 
-# Detect anomalies (POST)
-curl -X POST http://localhost:8000/detect \
-  -H "Content-Type: application/json" \
-  -d @your_logs.json
+# List available models
+curl http://localhost:8000/models
 
-# Root cause analysis
-curl -X POST http://localhost:8000/rca \
+# Detect anomalies
+curl -X POST http://localhost:8000/detect_anomaly \
   -H "Content-Type: application/json" \
-  -d '{"anomalies": [...]}'
+  -d '{"data": [{"error_rate": 0.35, "latency_ms": 450, "cpu_pct": 85, "memory_pct": 72}]}'
 ```
 
 ---
@@ -109,20 +114,23 @@ curl -X POST http://localhost:8000/rca \
 distributed-anomaly-rca/
 ├── api/
 │   ├── __init__.py
-│   └── service.py              # FastAPI endpoints
+│   └── service.py              # FastAPI endpoints (/health, /models, /detect_anomaly)
 ├── data_pipeline/
 │   ├── __init__.py
 │   ├── generator.py            # Sample K8s log generator
 │   └── feature_engineering.py  # Statistical feature extraction
 ├── models/
 │   ├── __init__.py
-│   └── engine.py               # Isolation Forest detection engine
+│   └── engine.py               # Multi-model detection engine
 ├── evaluation/
 │   ├── __init__.py
 │   └── metrics.py              # Precision, recall, F1, ROC-AUC
+├── dashboard/
+│   └── app.py                  # Advanced 6-tab Streamlit dashboard
 ├── .github/
-│   └── workflows/              # CI/CD and keep-alive pings
-├── app.py                      # Streamlit dashboard entry point
+│   └── workflows/
+│       └── keep-alive.yml      # Pings app every 12h to prevent sleep
+├── app.py                      # Simple 3-tab Streamlit dashboard
 ├── evaluate_detector.py        # Detector evaluation script
 ├── evaluate_rca.py             # RCA evaluation script
 ├── test_detector.py            # Detection tests
@@ -135,24 +143,25 @@ distributed-anomaly-rca/
 
 ---
 
-## Model Comparison
+## Model Performance
 
-| Model            | Precision | Recall | F1-Score | ROC-AUC | Latency |
-|------------------|-----------|--------|----------|---------|---------|
-| Isolation Forest | ~0.90     | ~0.88  | ~0.89    | ~0.92   | <10ms   |
-| *(add more)*     |           |        |          |         |         |
+| Model            | Precision | Recall  | F1-Score | Latency |
+|------------------|-----------|---------|----------|---------|
+| Isolation Forest | 98.08%    | 100.00% | 99.03%   | <10ms   |
+
+*Evaluated on 5,000 test samples with 5% anomaly rate.*
 
 ---
 
 ## API Documentation
 
-| Method | Endpoint     | Description                          |
-|--------|------------- |--------------------------------------|
-| GET    | `/`          | Health check / service info           |
-| POST   | `/detect`    | Run anomaly detection on log payload  |
-| POST   | `/rca`       | Root cause analysis on detected anomalies |
+| Method | Endpoint          | Description                              |
+|--------|-------------------|------------------------------------------|
+| GET    | `/health`         | Health check / service info              |
+| GET    | `/models`         | List available detection models          |
+| POST   | `/detect_anomaly` | Run anomaly detection on log payload     |
 
-### Example Response -- `/detect`
+### Example Response -- `/detect_anomaly`
 
 ```json
 {
@@ -199,7 +208,7 @@ Both the dashboard (`:8501`) and API (`:8000`) start automatically. Use a revers
 |--------------------|-------------------------------|----------------|
 | Dashboard          | Streamlit + Plotly            | $0             |
 | API                | FastAPI + Uvicorn             | $0             |
-| Anomaly Detection  | scikit-learn (Isolation Forest) | $0           |
+| Anomaly Detection  | scikit-learn (multi-model)    | $0             |
 | Root Cause Analysis| Google Gemini 2.0 Flash       | $0 (free tier) |
 | Hosting            | Streamlit Cloud / Docker      | $0             |
 | CI/CD              | GitHub Actions                | $0             |
