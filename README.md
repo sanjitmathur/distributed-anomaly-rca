@@ -51,8 +51,8 @@ Uses a **10,000-row stratified sample** from the [Credit Card Fraud Detection da
 
 ```bash
 # Clone and setup
-git clone https://github.com/sanjit-mathur/Anomoly-Detection.git
-cd Anomoly-Detection
+git clone https://github.com/sanjitmathur/distributed-anomaly-rca.git
+cd distributed-anomaly-rca
 python -m venv venv && source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 
@@ -102,6 +102,7 @@ curl -X POST http://localhost:8000/predict?model=isolation_forest \
 ## Project Structure
 
 ```
+├── app.py                   # Entry point for Streamlit Cloud
 ├── api/
 │   ├── main.py              # FastAPI endpoints
 │   └── schemas.py           # Pydantic request/response models
