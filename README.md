@@ -1,228 +1,149 @@
-# Distributed Anomaly Detection & Root Cause Analysis
+# Financial Transaction Fraud Detection Platform
 
-![Python](https://img.shields.io/badge/python-3.11-blue)
+![Python](https://img.shields.io/badge/python-3.11+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.28-red)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3-orange)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
-![Cost](https://img.shields.io/badge/cost-%240%2Fmo-orange)
 
-AI-powered system that detects anomalies in server/infrastructure logs and diagnoses root causes using multi-model ML and Google Gemini -- entirely free to run.
+Production-grade ML platform that detects fraudulent financial transactions using 4 anomaly detection models with SHAP explainability, a FastAPI backend, and a 6-tab Streamlit dashboard.
 
-**[Live Demo](https://anomaly-detection-analysis.streamlit.app/)** -- https://anomaly-detection-analysis.streamlit.app/
+**[Live Demo](https://anomaly-detection-analysis.streamlit.app/)** · https://anomaly-detection-analysis.streamlit.app/
 
 ---
 
 ## Architecture
 
 ```
-                          +------------------+
-                          |   Streamlit UI   |  :8501
-                          |   (dashboard)    |
-                          +--------+---------+
-                                   |
-              +--------------------+--------------------+
-              |                    |                     |
-     +--------v--------+  +-------v--------+  +--------v---------+
-     | Data Pipeline    |  | Detection      |  | Root Cause       |
-     | - generator.py   |  | Engine         |  | Analysis         |
-     | - feature_eng.py |  | - Iso. Forest  |  | - Gemini 2.0     |
-     +--------+---------+  | - LOF          |  |   Flash          |
-              |            | - DBSCAN       |  +--------+---------+
-              |            | - Autoencoder  |           |
-              |            +-------+--------+           |
-              +--------------------+--------------------+
-                                   |
-                          +--------v---------+
-                          |  FastAPI Service  |  :8000
-                          |  (api/service.py) |
-                          +------------------+
+CSV Dataset (10K transactions)
+        │
+        ▼
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Preprocessing   │────▶│   Feature Eng.   │────▶│  Model Training │
+│  (split, scale)  │     │  (6 new features)│     │  (4 models)     │
+└─────────────────┘     └──────────────────┘     └────────┬────────┘
+                                                          │
+                                          ┌───────────────┼───────────────┐
+                                          ▼               ▼               ▼
+                                   Model Registry    FastAPI :8000   Streamlit :8501
+                                   (.joblib files)   /predict        6-tab dashboard
+                                                     /batch_predict
+                                                     /model_metrics
 ```
 
 ## Features
 
-- **Multi-Model Anomaly Detection** -- Isolation Forest, LOF, DBSCAN, Autoencoder with ensemble scoring
-- **Automated Feature Engineering** -- rolling stats, z-scores, and time-based features from raw log metrics
-- **Model Evaluation Framework** -- precision, recall, F1, ROC-AUC with model leaderboard
-- **FastAPI REST Service** -- production-ready async API for programmatic access
-- **Gemini-Powered Explainability** -- root cause diagnosis in plain English via Gemini 2.0 Flash
-- **Advanced Dashboard** -- 6-tab Streamlit UI (explorer, detection, comparison, threshold tuning, explainability, real-time streaming)
-- **Permutation-Based Feature Importance** -- understand which metrics drive anomaly scores
-- **Docker-Ready** -- single-command deployment with docker-compose
+- **4 Anomaly Detection Models**: Isolation Forest, Local Outlier Factor, One-Class SVM, Autoencoder (scikit-learn + optional PyTorch)
+- **Feature Engineering**: Log-scaled amounts, cyclical time encoding, Z-scores, PCA magnitude, outlier counts
+- **SHAP Explainability**: Tree and kernel SHAP explanations for individual fraud predictions
+- **Real-Time Simulation**: Live transaction monitoring with animated scoring
+- **Model Comparison**: Leaderboard, ROC/PR curves, metric bar charts
+- **FastAPI Backend**: REST API with Pydantic validation, batch prediction, CORS support
+- **Interactive Dashboard**: 6 tabs — Explorer, Detection, Comparison, Visualization, Explainability, Simulation
 
----
+## Dataset
+
+Uses a **10,000-row stratified sample** from the [Credit Card Fraud Detection dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) (Kaggle). Features V1-V28 are PCA-transformed, plus Time and Amount. Class label: 0 = normal, 1 = fraud (~0.17% fraud rate).
 
 ## Quick Start
 
 ### Local
 
 ```bash
-# Clone
-git clone https://github.com/sanjitmathur/distributed-anomaly-rca.git
-cd distributed-anomaly-rca
-
-# Setup
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# Clone and setup
+git clone https://github.com/sanjit-mathur/Anomoly-Detection.git
+cd Anomoly-Detection
+python -m venv venv && source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 
-# Set API key
-export GEMINI_API_KEY=your_key_here  # Windows: set GEMINI_API_KEY=your_key_here
-
-# Run dashboard (simple 3-tab version)
-streamlit run app.py
-
-# Run advanced dashboard (6-tab version)
+# Run the dashboard (trains models on first launch)
 streamlit run dashboard/app.py
 
-# Run API (separate terminal)
-uvicorn api.service:app --host 0.0.0.0 --port 8000
+# Or run the API server
+uvicorn api.main:app --reload --port 8000
 ```
 
 ### Docker
 
 ```bash
-# Create .env file
-echo "GEMINI_API_KEY=your_key_here" > .env
-
-# Start both services
+cd docker
 docker-compose up --build
-
 # Dashboard: http://localhost:8501
-# API:       http://localhost:8000
+# API: http://localhost:8000
 ```
 
-### API
+## Model Performance
+
+| Model | Precision | Recall | F1 | ROC-AUC |
+|-------|-----------|--------|----|---------|
+| Isolation Forest | — | — | — | — |
+| Local Outlier Factor | — | — | — | — |
+| One-Class SVM | — | — | — | — |
+| Autoencoder | — | — | — | — |
+
+*Metrics populated after first training run on the dashboard.*
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Service health + loaded models |
+| `POST` | `/predict` | Score a single transaction |
+| `POST` | `/batch_predict` | Score multiple transactions |
+| `GET` | `/model_metrics` | Cached evaluation metrics |
 
 ```bash
-# Health check
-curl http://localhost:8000/health
-
-# List available models
-curl http://localhost:8000/models
-
-# Detect anomalies
-curl -X POST http://localhost:8000/detect_anomaly \
+# Example: score a transaction
+curl -X POST http://localhost:8000/predict?model=isolation_forest \
   -H "Content-Type: application/json" \
-  -d '{"data": [{"error_rate": 0.35, "latency_ms": 450, "cpu_pct": 85, "memory_pct": 72}]}'
+  -d '{"Amount": 149.62, "Time": 0, "V1": -1.36, "V2": -0.07}'
 ```
-
----
 
 ## Project Structure
 
 ```
-distributed-anomaly-rca/
 ├── api/
-│   ├── __init__.py
-│   └── service.py              # FastAPI endpoints (/health, /models, /detect_anomaly)
-├── data_pipeline/
-│   ├── __init__.py
-│   ├── generator.py            # Sample K8s log generator
-│   └── feature_engineering.py  # Statistical feature extraction
-├── models/
-│   ├── __init__.py
-│   └── engine.py               # Multi-model detection engine
-├── evaluation/
-│   ├── __init__.py
-│   └── metrics.py              # Precision, recall, F1, ROC-AUC
+│   ├── main.py              # FastAPI endpoints
+│   └── schemas.py           # Pydantic request/response models
 ├── dashboard/
-│   └── app.py                  # Advanced 6-tab Streamlit dashboard
-├── .github/
-│   └── workflows/
-│       └── keep-alive.yml      # Pings app every 12h to prevent sleep
-├── app.py                      # Simple 3-tab Streamlit dashboard
-├── evaluate_detector.py        # Detector evaluation script
-├── evaluate_rca.py             # RCA evaluation script
-├── test_detector.py            # Detection tests
-├── test_gemini.py              # Gemini integration tests
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+│   └── app.py               # 6-tab Streamlit dashboard
+├── data/
+│   ├── creditcard_sample.csv # 10K stratified sample
+│   └── generate_sample.py   # Sample generation script
+├── docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── evaluation/
+│   ├── metrics.py           # Precision, recall, F1, ROC-AUC, PR curves
+│   └── model_comparison.py  # Leaderboard, ROC/PR/bar chart plots
+├── models/
+│   ├── model_loader.py      # Load trained models from registry
+│   ├── train_models.py      # Train 4 models, save to registry
+│   └── saved/               # Serialized .joblib models + metadata
+├── pipeline/
+│   ├── preprocessing.py     # Load, split, scale data
+│   └── feature_engineering.py # Engineered features
+├── tests/
+│   ├── test_preprocessing.py
+│   ├── test_features.py
+│   ├── test_models.py
+│   └── test_api.py
+├── utils/
+│   ├── config.py            # Central config (paths, hyperparams)
+│   └── logger.py            # Structured logging
+└── requirements.txt
 ```
-
----
-
-## Model Performance
-
-| Model            | Precision | Recall  | F1-Score | Latency |
-|------------------|-----------|---------|----------|---------|
-| Isolation Forest | 98.08%    | 100.00% | 99.03%   | <10ms   |
-
-*Evaluated on 5,000 test samples with 5% anomaly rate.*
-
----
-
-## API Documentation
-
-| Method | Endpoint          | Description                              |
-|--------|-------------------|------------------------------------------|
-| GET    | `/health`         | Health check / service info              |
-| GET    | `/models`         | List available detection models          |
-| POST   | `/detect_anomaly` | Run anomaly detection on log payload     |
-
-### Example Response -- `/detect_anomaly`
-
-```json
-{
-  "anomalies": [...],
-  "total_records": 1000,
-  "anomalies_found": 42,
-  "model": "IsolationForest"
-}
-```
-
----
-
-## Deployment
-
-### Streamlit Cloud
-
-1. Push repo to GitHub
-2. Go to [share.streamlit.io](https://share.streamlit.io)
-3. Connect repo, set `app.py` as entry point
-4. Add `GEMINI_API_KEY` in Secrets
-5. Deploy
-
-### Docker (Production)
-
-```bash
-docker-compose up -d --build
-```
-
-Both the dashboard (`:8501`) and API (`:8000`) start automatically. Use a reverse proxy (nginx/Caddy) for HTTPS in production.
-
----
-
-## Get Free Gemini API Key
-
-1. Go to [Google AI Studio](https://aistudio.google.com/app/apikeys)
-2. Click "Create API Key"
-3. Copy and set as `GEMINI_API_KEY` environment variable
-
----
 
 ## Tech Stack
 
-| Component          | Technology                    | Cost           |
-|--------------------|-------------------------------|----------------|
-| Dashboard          | Streamlit + Plotly            | $0             |
-| API                | FastAPI + Uvicorn             | $0             |
-| Anomaly Detection  | scikit-learn (multi-model)    | $0             |
-| Root Cause Analysis| Google Gemini 2.0 Flash       | $0 (free tier) |
-| Hosting            | Streamlit Cloud / Docker      | $0             |
-| CI/CD              | GitHub Actions                | $0             |
-| **Total**          |                               | **$0/month**   |
-
----
-
-## Cost: $0/month
-
-- **Gemini API**: Free tier -- 1M tokens/month (~500 analyses)
-- **Streamlit Cloud**: Free hosting for public repos
-- **GitHub Actions**: Free for public repos (keeps app alive with 12h pings)
-
----
+| Category | Technology |
+|----------|-----------|
+| ML Models | scikit-learn (Isolation Forest, LOF, OCSVM), PyTorch (Autoencoder) |
+| Explainability | SHAP |
+| Backend | FastAPI, Uvicorn, Pydantic |
+| Frontend | Streamlit, Plotly |
+| Data | pandas, NumPy |
+| Deployment | Docker, Streamlit Cloud |
 
 ## License
 
