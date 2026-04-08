@@ -1,19 +1,51 @@
 version: "3.9"
 
 services:
+  # ── Inference Service ─────────────────────────────────────────────
+  # FastAPI: scores transactions, detects drift, exposes SSE stream
+  inference_service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.base
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --workers 1
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Producer ──────────────────────────────────────────────────────
+  # Mock transaction generator → POSTs to inference_service /ingest
+  producer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.base
+    command: >
+      python -m streaming.producer
+      --mode http
+      --target http://inference_service:8000/ingest
+      --tps 10
+      --fraud-rate 0.005
+    depends_on:
+      inference_service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Dashboard ─────────────────────────────────────────────────────
+  # Streamlit UI consumes SSE from inference_service
   dashboard:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.base
+    command: streamlit run dashboard/app.py --server.port=8501 --server.headless=true
     ports:
       - "8501:8501"
-    restart: unless-stopped
-
-  api:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
-    ports:
-      - "8000:8000"
+    environment:
+      - INFERENCE_URL=http://inference_service:8000
+    depends_on:
+      inference_service:
+        condition: service_healthy
     restart: unless-stopped

@@ -30,7 +30,7 @@ class FeatureEngineer:
         df = self._add_time_features(df)
         df = self._add_v_features(df)
         df = df.fillna(0)
-        log.info("Engineered %d features → %d total columns", 6, len(df.columns))
+        log.info("Engineered %d features -> %d total columns", 6, len(df.columns))
         return df
 
     def _add_amount_features(self, df: pd.DataFrame) -> pd.DataFrame:

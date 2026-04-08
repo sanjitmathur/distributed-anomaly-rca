@@ -26,6 +26,7 @@ ENGINEERED_FEATURES = [
 V_FEATURES = [f"V{i}" for i in range(1, 29)]
 ALL_FEATURES = V_FEATURES + [
     "Amount",
+    "Time",
     "amount_log",
     "hour_sin",
     "hour_cos",
@@ -65,6 +66,19 @@ MODEL_PARAMS = {
 }
 
 MODEL_NAMES = list(MODEL_PARAMS.keys())
+
+# ---------------------------------------------------------------------------
+# Streaming features (appended by consumer, not used in model training)
+# ---------------------------------------------------------------------------
+STREAMING_FEATURES = [
+    "txn_count_10m",
+    "txn_amount_mean_10m",
+    "txn_amount_std_10m",
+    "txn_velocity_per_min",
+    "ip_degree",
+    "device_degree",
+    "shared_infra_score",
+]
 
 # ---------------------------------------------------------------------------
 # Preprocessing
